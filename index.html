@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b1622">
+<meta name="description" content="모바일 브라우저용 실시간 영토 전략 게임">
+<title>Territorial Game</title>
+<link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- 게임 중 UI -->
+  <div id="hud" class="hidden">
+    <div id="topbar">
+      <div class="stat"><span class="label">Balance</span><b id="balance">0</b></div>
+      <div class="stat"><span class="label">영토</span><b id="territory">0%</b></div>
+      <div class="stat"><span class="label">소득</span><b id="income">+0/s</b></div>
+      <button id="btn-pause" title="일시정지">❚❚</button>
+    </div>
+
+    <div id="ranking"></div>
+    <div id="ticker"></div>
+    <div id="toasts"></div>
+    <div id="trench-cost" class="hidden"></div>
+
+    <div id="panel">
+      <button id="panel-close" aria-label="닫기">×</button>
+      <div id="panel-title"></div>
+      <div id="panel-body"></div>
+      <div id="panel-actions"></div>
+    </div>
+
+    <div id="bottom">
+      <div id="build-hint" class="hidden"></div>
+      <div id="ratiobar">
+        <span class="label">투입</span>
+        <input type="range" id="ratio" min="5" max="100" step="5" value="50">
+        <b id="ratio-value">50%</b>
+      </div>
+      <div id="buildbar">
+        <button data-build="city">도시 <em id="cost-city"></em></button>
+        <button data-build="fort">방어기지 <em id="cost-fort"></em></button>
+        <button data-build="trench">참호 <em id="cost-trench"></em></button>
+      </div>
+      <div id="seed-label"></div>
+    </div>
+  </div>
+
+  <!-- 시작 메뉴 -->
+  <div id="menu" class="screen">
+    <div class="card">
+      <h1>Territorial Game</h1>
+      <p class="lead">상대를 탭하고 공격을 누르면 두 나라가 맞닿은 국경 전체가 그 형태 그대로 밀려납니다.</p>
+
+      <div class="field">
+        <label>AI 난이도</label>
+        <div id="difficulty-row" class="chips">
+          <button data-diff="easy">쉬움</button>
+          <button data-diff="normal" class="active">보통</button>
+          <button data-diff="hard">어려움</button>
+          <button data-diff="brutal">매우 어려움</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>AI 국가 수</label>
+        <div id="ai-row" class="chips">
+          <button data-ai="3">3</button>
+          <button data-ai="6" class="active">6</button>
+          <button data-ai="9">9</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>지도 시드 <small>(비우면 무작위)</small></label>
+        <input id="seed-input" type="text" placeholder="예: hello" autocomplete="off">
+      </div>
+
+      <button id="btn-start" class="primary">시작</button>
+
+      <details class="rules">
+        <summary>조작 방법</summary>
+        <ul>
+          <li>한 손가락 드래그 = 지도 이동, 두 손가락 = 확대/축소</li>
+          <li>상대 땅 탭 → <b>공격</b> / <b>화친</b></li>
+          <li>상대 해안 탭 → <b>배</b> / <b>공격</b> / <b>화친</b></li>
+          <li>육상 국경이 없으면 공격은 비활성화됩니다</li>
+          <li>배는 목표 해안만 고르면 가장 가까운 자국 해안에서 자동 출항합니다</li>
+          <li>적 함선을 탭하고 <b>배</b>를 누르면 요격함이 나갑니다</li>
+          <li>중립 땅 탭 → <b>확장</b></li>
+          <li>참호 버튼 선택 후 자기 영토 위를 드래그하면 선이 그어집니다</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div id="result" class="screen hidden">
+    <div class="card">
+      <h1 id="result-title"></h1>
+      <p id="result-body"></p>
+      <button id="btn-restart" class="primary">메뉴로</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
