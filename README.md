@@ -19,11 +19,18 @@ npx serve .
 
 그 다음 브라우저에서 `http://localhost:3000` 을 연다.
 
-엔진 검증 테스트 (DOM 없이 Node 에서 실행):
+검증 테스트 (DOM 없이 Node 에서 실행):
 
 ```bash
 node tests/front.test.mjs
 ```
+
+```bash
+node tests/balance.test.mjs
+```
+
+`front.test.mjs` 는 전선 알고리즘이 맞는지, `balance.test.mjs` 는 실제로 한 판이 성립하는지 본다.
+후자는 전체 시뮬레이션을 돌리므로 1분 남짓 걸린다.
 
 ---
 
@@ -183,7 +190,9 @@ src/
   ai/AIController.js     Utility AI, 난이도별 판단 품질
   ui/                    Camera, Input(팬/핀치/탭/드래그), HUD
   render/Renderer.js     오프스크린 셀 래스터 + dirty cell 패치
-tests/front.test.mjs     인수인계 23장 검증 케이스
+tests/
+  front.test.mjs       인수인계 23장 전선/해상 검증 케이스
+  balance.test.mjs     초반 안정성, 난이도 격차, 죽음의 나선 방지
 ```
 
 ### 성능 메모
@@ -215,6 +224,15 @@ tests/front.test.mjs     인수인계 23장 검증 케이스
 - 비접경 공격 차단 시 Balance 미소모
 - 동시 공격 편향 없음 (좌우 대칭 시나리오에서 100% 일치)
 - 큰 공격도 전선 속도 제한을 넘지 않음
+
+`balance.test.mjs` 는 시드 8개를 실제로 돌려 다음을 확인한다.
+
+- 개전 45초 안에 멸망하는 국가가 없다 (방치한 플레이어 포함)
+- 개전 40초 안에 AI 해상 원정이 없다 — 근처 중립 땅이 남았는데 원정을 나가지 않는다
+- Balance 가 바닥난 나라도 셀당 최소 비용을 요구한다 (작은 상륙 하나로 대국이 쓸려나가지 않는다)
+- 난이도가 올라갈수록 AI 가 실제로 지도를 더 많이 먹는다 (180초 기준 65% → 72% → 81% → 87%)
+- 난이도가 AI 의 소득 / 상한 / 시작 Balance 를 바꾸지 않는다 (자원 치트 없음)
+- 240초 안에 지도 대부분이 점유된다 (교착 없음)
 
 ---
 

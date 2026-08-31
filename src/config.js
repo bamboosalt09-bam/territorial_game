@@ -33,7 +33,7 @@ export const CONFIG = {
 
   combat: {
     attackDefenseRatio: 2.0,   // 수비 Balance 1 을 깎는 데 공격 Balance 2
-    minDefenseDensity: 0.35,   // Balance 0 인 나라가 공짜가 되지 않도록 하한
+    minDefenseDensity: 1.0,    // Balance 0 인 나라도 중립 땅만큼은 비싸게 (죽음의 나선 방지)
     neutralDefense: 0.85,      // 중립 땅의 고정 수비 밀도
     visibleFrontSpeed: 5.5,    // 초당 전선 진행 깊이(셀). 전투량과 분리된 값
     frontNoise: 0.14,          // 격자 아티팩트를 깨는 결정론적 미세 노이즈

@@ -204,7 +204,11 @@ export class AIController {
   considerNaval(country, p, out) {
     const g = this.game;
     if (this.rand() > p.naval) return;
-    if (country.balance < CONFIG.fleet.minLaunch * 6) return;
+    // 해상 원정은 중반 옵션이다.
+    // 초반에는 아무도 육상 접경이 없어서 모든 나라가 "비접경 약한 적"으로 잡히는데,
+    // 그 시점에 원정을 나가면 근처 중립 땅을 놔두고 훨씬 비싼 선택을 하는 셈이 된다.
+    if (g.borderLength(country.id, NEUTRAL) > 30) return;
+    if (country.balance < CONFIG.fleet.minLaunch * 25) return;
 
     // 육상으로 닿지 않는 약한 적을 고른다
     const landNeighbors = new Set(g.landNeighbors(country.id));
@@ -220,7 +224,7 @@ export class AIController {
       if (coasts.length === 0) continue;
       const cell = coasts[(this.rand() * coasts.length) | 0];
       const weakness = country.balance / Math.max(1, e.balance);
-      let score = -0.3 + Math.min(1.0, weakness * 0.5);
+      let score = -0.55 + Math.min(0.9, weakness * 0.45);
       if (e.landCount < country.landCount * 0.5) score += 0.25;
       if (score > bestScore) {
         // 실제로 항로가 있는지는 비싸니 최종 후보에서만 확인한다
