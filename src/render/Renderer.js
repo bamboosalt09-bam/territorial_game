@@ -3,7 +3,7 @@ import { LAND, WATER, NEUTRAL, DX4, DY4 } from '../game/MapGrid.js';
 
 const WATER_RGB = [22, 42, 66];
 const WATER_DEEP = [15, 30, 50];
-const NEUTRAL_RGB = [116, 124, 118];
+const NEUTRAL_RGB = [88, 95, 90];
 
 /**
  * 지도는 셀 1개 = 픽셀 1개인 오프스크린 캔버스에 그린 뒤 확대해서 붙인다.
@@ -59,6 +59,13 @@ export class Renderer {
       const j = map.idx(nx, ny);
       if (map.terrain[j] === WATER || map.owner[j] !== owner) { edge = true; break; }
     }
+    if (edge && owner === this.game.playerId) {
+      // 내 나라만 테두리를 밝게 빼서, 여러 색이 섞인 지도에서도 즉시 구분되게 한다
+      out[0] = base[0] * 0.6 + 255 * 0.4;
+      out[1] = base[1] * 0.6 + 255 * 0.4;
+      out[2] = base[2] * 0.6 + 255 * 0.4;
+      return;
+    }
     const f = edge ? 0.58 : 1;
     out[0] = base[0] * f; out[1] = base[1] * f; out[2] = base[2] * f;
   }
@@ -109,6 +116,7 @@ export class Renderer {
     this.drawTrenches(ctx, cam);
     this.drawStructures(ctx, cam);
     this.drawFleets(ctx, cam);
+    this.drawPlayerMarker(ctx, cam);
     if (ui) this.drawOverlay(ctx, cam, ui);
 
     ctx.restore();
@@ -257,6 +265,72 @@ export class Renderer {
         ctx.fillText(label, s.x, s.y - size - 3);
       }
     }
+  }
+
+
+  /**
+   * "내 나라가 여기" 표식.
+   * 시작 영토는 화면에서 점 하나만 하기 때문에, 초반에는 수도에 고리를 띄우고
+   * 내 영토가 화면 밖으로 나가면 가장자리에 방향 화살표를 그린다.
+   */
+  drawPlayerMarker(ctx, cam) {
+    const g = this.game;
+    const player = g.countries[g.playerId];
+    if (!player || !player.alive) return;
+    const anchor = g.playerAnchor();
+    if (anchor < 0) return;
+
+    const map = g.map;
+    const s = cam.mapToScreen(map.xOf(anchor) + 0.5, map.yOf(anchor) + 0.5);
+    const pulse = 0.5 + 0.5 * Math.sin(g.time * 2.6);
+    const color = player.cssColor();
+    const margin = 26;
+    const onScreen = s.x > margin && s.y > margin
+      && s.x < cam.viewW - margin && s.y < cam.viewH - margin;
+
+    if (onScreen) {
+      // 영토가 충분히 커지면 굳이 안내하지 않는다
+      if (player.landCount > 600) return;
+      const r = Math.max(16, cam.scale * 7) * (0.9 + 0.1 * pulse);
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.35 + 0.35 * pulse;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.font = '600 11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.lineWidth = 3;
+      ctx.strokeText('내 나라', s.x, s.y - r - 6);
+      ctx.fillText('내 나라', s.x, s.y - r - 6);
+      ctx.restore();
+      return;
+    }
+
+    // 화면 밖 -> 가장자리에서 방향을 가리킨다
+    const cx = cam.viewW / 2, cy = cam.viewH / 2;
+    const dx = s.x - cx, dy = s.y - cy;
+    const len = Math.hypot(dx, dy) || 1;
+    const halfW = cam.viewW / 2 - margin, halfH = cam.viewH / 2 - margin;
+    const scale = Math.min(halfW / Math.abs(dx || 1e-6), halfH / Math.abs(dy || 1e-6));
+    const ex = cx + dx * scale, ey = cy + dy * scale;
+
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.rotate(Math.atan2(dy, dx));
+    ctx.beginPath();
+    ctx.moveTo(13, 0); ctx.lineTo(-9, 8); ctx.lineTo(-9, -8);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(8,12,18,0.9)';
+    ctx.stroke();
+    ctx.restore();
   }
 
   /** 선택 표시, 참호 미리보기, 건설 커서 */

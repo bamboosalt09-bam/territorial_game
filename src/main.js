@@ -88,8 +88,12 @@ function startGame(opts) {
   });
 
   resize();
+  // 시작 영토는 지름 9셀뿐이다. 화면에 점 하나로 보이지 않도록 블롭 크기 기준으로 줌을 잡는다.
   const cap = game.countries[game.playerId].capitalCell;
-  camera.centerOn(game.map.xOf(cap), game.map.yOf(cap), 4.5);
+  const blob = CONFIG.match.startBlobRadius * 2 + 1;
+  const startZoom = Math.min(CONFIG.ui.maxZoom,
+    Math.max(4, (0.22 * Math.min(camera.viewW, camera.viewH)) / blob));
+  camera.centerOn(game.map.xOf(cap), game.map.yOf(cap), startZoom);
 
   $('seed-label').textContent = `seed ${opts.seed} · ${DIFFICULTY_LABELS[opts.difficulty]}`;
   hud.syncBuildButtons();
@@ -116,18 +120,38 @@ function makeActions() {
     return true;
   };
 
+  // 명령이 실제로 먹혔는지 바로 알 수 있어야 한다.
+  // 전선은 천천히 움직이므로 아무 피드백이 없으면 "눌리지 않았다" 고 느낀다.
+  const spent = () => Math.round(game.countries[game.playerId].balance * ui.ratio);
+
   return {
     attack: (enemyId) => {
-      if (report(game.launchAttack(game.playerId, enemyId, ui.ratio))) hud.closePanel();
+      const cost = spent();
+      if (report(game.launchAttack(game.playerId, enemyId, ui.ratio))) {
+        hud.closePanel();
+        hud.toast(`${game.nameOf(enemyId)} 공격 · 투입 ${cost}`);
+      }
     },
     expand: () => {
-      if (report(game.launchExpansion(game.playerId, ui.ratio))) hud.closePanel();
+      const cost = spent();
+      if (report(game.launchExpansion(game.playerId, ui.ratio))) {
+        hud.closePanel();
+        hud.toast(`중립 지대 확장 · 투입 ${cost}`);
+      }
     },
     invade: (cell) => {
-      if (report(game.launchInvasion(game.playerId, cell, ui.ratio))) hud.closePanel();
+      const cost = spent();
+      if (report(game.launchInvasion(game.playerId, cell, ui.ratio))) {
+        hud.closePanel();
+        hud.toast(`상륙 함대 출항 · 병력 ${cost}`);
+      }
     },
     intercept: (fleet) => {
-      if (report(game.launchIntercept(game.playerId, fleet, ui.ratio))) hud.closePanel();
+      const cost = spent();
+      if (report(game.launchIntercept(game.playerId, fleet, ui.ratio))) {
+        hud.closePanel();
+        hud.toast(`요격함 출항 · 병력 ${cost}`);
+      }
     },
     peace: (enemyId) => {
       const res = game.requestPeace(game.playerId, enemyId);

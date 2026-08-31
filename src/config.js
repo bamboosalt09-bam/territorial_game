@@ -36,7 +36,12 @@ export const CONFIG = {
     minDefenseDensity: 1.0,    // Balance 0 인 나라도 중립 땅만큼은 비싸게 (죽음의 나선 방지)
     neutralDefense: 0.85,      // 중립 땅의 고정 수비 밀도
     visibleFrontSpeed: 5.5,    // 초당 전선 진행 깊이(셀). 전투량과 분리된 값
-    frontNoise: 0.14,          // 격자 아티팩트를 깨는 결정론적 미세 노이즈
+    // 8방향 거리 근사는 본질적으로 팔각형 ball 을 만든다 (22.5도 방향이 약 8% 눌린다).
+    // 중립 확장처럼 한 덩어리에서 사방으로 퍼질 때 그 각진 면이 눈에 띈다.
+    // step 마다 섞는 결정론적 노이즈를 키우면 그 면이 무너져 원에 가까워진다.
+    // 실측: 0.14 -> 방사 확장 fill 0.733, 0.40 -> 0.764 (완전한 원 = 0.785).
+    // 직선 국경의 균일성은 그대로다 (전진량 sd 0.50셀, 평균의 7%).
+    frontNoise: 0.40,
     band: 0.35,                // 이 거리 밴드 안의 셀은 같은 tick 에 동시 처리
     maxCellsPerTick: 1200,     // 모바일 안전판
     minAttackBalance: 4,
@@ -74,8 +79,8 @@ export const CONFIG = {
 
   ui: {
     defaultRatio: 0.5,
-    tapSlopPx: 14,
-    tapMaxMs: 400,
+    tapSlopPx: 22,      // 손가락 탭은 마우스보다 훨씬 많이 흔들린다
+    tapMaxMs: 1200,     // 길게 눌러도 탭. 이 게임에는 롱프레스 제스처가 없다
     fleetHitRadius: 9,   // 화면 픽셀 기준
     minZoom: 0.5,
     maxZoom: 14,

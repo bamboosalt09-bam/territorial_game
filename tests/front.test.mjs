@@ -199,6 +199,40 @@ section('23.1 전선 형상');
     `반경 ${radii.join('/')} (sd ${rs.sd.toFixed(2)})`);
 }
 
+// Case F: 한 덩어리에서 사방으로 퍼질 때 둥글게 자라는가 (중립 확장 = 초반 내내 보는 화면)
+//
+// 문서 8.1 "잘못된 방식 B" 가 경고한 마름모/계단 현상을 잡는 케이스다.
+// 직선 국경 테스트만으로는 격자 이방성이 드러나지 않는다.
+// 지표: 점유 셀 수 / 바운딩 박스 넓이.  원 = 0.785, 팔각형 = 0.707, 마름모 = 0.50
+{
+  const W = 200, H = 200, CX = 100, CY = 100;
+  const g = newGame(blankMap(W, H));
+  paint(g, 1, (x, y) => (x - CX) ** 2 + (y - CY) ** 2 <= 9);
+  g.recomputeBorders();
+  g.countries[1].balance = 6000;
+  g.launchExpansion(1, 1.0);
+  runAttack(g, 40);
+
+  const map = g.map;
+  let n = 0, minx = 1e9, maxx = -1, miny = 1e9, maxy = -1;
+  for (let i = 0; i < map.owner.length; i++) {
+    if (map.owner[i] !== 1) continue;
+    n++;
+    const x = map.xOf(i), y = map.yOf(i);
+    if (x < minx) minx = x; if (x > maxx) maxx = x;
+    if (y < miny) miny = y; if (y > maxy) maxy = y;
+  }
+  const fill = n / ((maxx - minx + 1) * (maxy - miny + 1));
+  check('Case F 중립 확장이 마름모가 아니다', fill > 0.62,
+    `bbox 충전율 ${fill.toFixed(3)} (마름모 0.50)`);
+  check('Case F 중립 확장이 원에 가깝다', fill > 0.73,
+    `bbox 충전율 ${fill.toFixed(3)} (팔각형 0.707, 원 0.785)`);
+
+  const wide = maxx - minx + 1, tall = maxy - miny + 1;
+  check('Case F 가로세로가 대칭이다', Math.abs(wide - tall) <= Math.max(3, wide * 0.06),
+    `${wide} x ${tall}`);
+}
+
 // ---- 23.2 참호 --------------------------------------------------------------
 
 section('23.2 참호');

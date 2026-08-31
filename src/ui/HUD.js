@@ -41,6 +41,13 @@ export class HUD {
       btn.addEventListener('click', () => this.toggleBuild(btn.dataset.build));
     }
 
+    // 순위표를 탭하면 그 나라로 화면을 옮긴다 (모바일에서 자기 영토 찾기가 제일 답답하다)
+    $('ranking').addEventListener('click', (e) => {
+      const row = e.target.closest('.rank-row');
+      if (!row) return;
+      this.focusCountry(Number(row.dataset.id));
+    });
+
     $('btn-pause').addEventListener('click', () => {
       this.game.paused = !this.game.paused;
       $('btn-pause').textContent = this.game.paused ? '▶' : '❚❚';
@@ -48,6 +55,18 @@ export class HUD {
   }
 
   get player() { return this.game.countries[this.game.playerId]; }
+
+  /** 해당 국가의 수도(없으면 아무 영토)로 화면 이동 */
+  focusCountry(id) {
+    const g = this.game, map = g.map;
+    const c = g.countries[id];
+    if (!c || !c.alive) return;
+    let cell = c.capitalCell >= 0 && map.owner[c.capitalCell] === id ? c.capitalCell : -1;
+    if (cell < 0) cell = c.cities.find(x => map.owner[x] === id) ?? -1;
+    if (cell < 0 && g.anyCell) cell = g.anyCell[id];
+    if (cell === undefined || cell < 0) return;
+    this.camera.centerOn(map.xOf(cell), map.yOf(cell), Math.max(this.camera.scale, 3));
+  }
 
   toggleBuild(mode) {
     this.ui.buildMode = this.ui.buildMode === mode ? null : mode;
@@ -92,14 +111,20 @@ export class HUD {
   }
 
   updateRanking() {
-    const list = this.game.ranking().slice(0, 6);
+    // 내 나라는 순위가 낮아도 반드시 보여야 한다 (목록에서 사라지면 자기를 못 찾는다)
+    const all = this.game.ranking();
+    const list = all.slice(0, 6);
+    const meIndex = all.findIndex(c => c.isPlayer);
+    if (meIndex >= 6) list[5] = all[meIndex];
     const total = this.game.map.landCells || 1;
     $('ranking').innerHTML = list.map(c => {
       const pct = (c.landCount / total * 100).toFixed(1);
       const peace = this.game.atPeace(this.game.playerId, c.id) ? ' <b class="peace">화친</b>' : '';
-      return `<div class="rank-row${c.isPlayer ? ' me' : ''}">
+      const rank = all.indexOf(c) + 1;
+      const label = c.isPlayer ? `내 나라 <b class="rank-no">${rank}위</b>` : c.name;
+      return `<div class="rank-row${c.isPlayer ? ' me' : ''}" data-id="${c.id}">
         <i style="background:${c.cssColor()}"></i>
-        <span class="rank-name">${c.name}${peace}</span>
+        <span class="rank-name">${label}${peace}</span>
         <span class="rank-pct">${pct}%</span>
       </div>`;
     }).join('');

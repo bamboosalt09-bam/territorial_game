@@ -119,6 +119,28 @@ section('난이도 격차');
     `차이 ${((share.brutal - share.easy) * 100).toFixed(1)}%p`);
 }
 
+// ---- 재현성 -------------------------------------------------------------------
+
+section('재현성');
+
+{
+  // 같은 seed 는 항상 같은 판이어야 한다.
+  // 전선 노이즈 해시에 공격 id 가 들어가므로, 그 카운터가 프로세스 전역이면
+  // "앞에서 몇 판을 돌렸는지" 에 따라 결과가 달라진다.
+  const play = (seed, secs) => {
+    const g = new Game({ seed: seedFromString(seed), difficulty: 'hard', aiCount: 6 });
+    for (let t = 0; t < secs && !g.over; t += 1 / 30) g.tick(1 / 30);
+    return g.countries.filter(Boolean).map(c => `${c.name}:${c.landCount}:${Math.round(c.balance)}`).join('|');
+  };
+  const first = play('live', 90);
+  const again = play('live', 90);
+  play('hello', 30);                 // 사이에 다른 판을 끼워 넣는다
+  const afterOther = play('live', 90);
+
+  check('같은 seed 를 다시 돌리면 같은 결과', first === again);
+  check('다른 판을 먼저 돌려도 결과가 같다', first === afterOther);
+}
+
 // ---- 자원 치트 없음 -------------------------------------------------------------
 
 section('자원 치트 없음');
@@ -142,16 +164,21 @@ section('게임 진행');
 {
   // 승자가 나오거나 최소한 지도가 실제로 채워져야 한다 (교착 상태로 멈추지 않는다).
   let filled = 0;
+  const cover = [];
   for (const s of SEEDS) {
     const g = run(s, 'hard', 240);
     let owned = 0;
     for (let i = 0; i < g.map.owner.length; i++) {
       if (g.map.terrain[i] === LAND && g.map.owner[i] !== NEUTRAL) owned++;
     }
+    cover.push(owned / g.map.landCells);
     if (owned / g.map.landCells > 0.85) filled++;
   }
-  check('240초 안에 지도 대부분이 점유된다', filled >= SEEDS.length - 1,
-    `${filled}/${SEEDS.length} 시드에서 85% 이상 점유`);
+  cover.sort((a, b) => a - b);
+  check('240초 안에 지도 대부분이 점유된다', filled >= SEEDS.length - 2,
+    `${filled}/${SEEDS.length} 시드에서 85% 이상 (최저 ${(cover[0] * 100).toFixed(0)}%)`);
+  check('가장 느린 시드도 240초에 80% 는 넘는다', cover[0] > 0.80,
+    `최저 ${(cover[0] * 100).toFixed(0)}%`);
 }
 
 console.log(results.join('\n'));

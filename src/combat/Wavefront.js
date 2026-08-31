@@ -19,10 +19,10 @@ const SQRT2 = Math.SQRT2;
  * 큰 공격을 해도 영토가 순간이동하지 않는다.
  */
 export class LandAttack {
-  static nextId = 1;
-
   constructor(game, attackerId, defenderId, budget, seedCells = null) {
-    this.id = LandAttack.nextId++;
+    // id 는 전선 노이즈 해시에 들어간다. 프로세스 전역 카운터를 쓰면 같은 seed 로
+    // 다시 시작해도 결과가 달라지므로, 게임마다 1 부터 다시 센다.
+    this.id = game.nextAttackId++;
     this.game = game;
     this.attackerId = attackerId;
     this.defenderId = defenderId;

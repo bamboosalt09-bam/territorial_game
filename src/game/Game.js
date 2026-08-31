@@ -35,6 +35,7 @@ export class Game {
     this.borderCount = new Map();   // "a,b" 공유 국경 길이 (a < b, 0 = 중립)
     this.borderTimer = 0;
 
+    this.nextAttackId = 1;   // 전선 노이즈가 seed 에만 의존하도록 게임별로 센다
     this.playerId = 1;
     if (!options.manualSetup) this.setupCountries();
     this.recomputeBorders();
@@ -146,12 +147,14 @@ export class Game {
     this.contested = Array.from({ length: nc }, () => []);
     this.coastSample = Array.from({ length: nc }, () => []);
     this.coastComp = Array.from({ length: nc }, () => new Set());
+    this.anyCell = new Int32Array(nc).fill(-1);
     const CAP = 500;
 
     const terrain = map.terrain, owner = map.owner;
     for (let i = 0; i < n; i++) {
       if (terrain[i] !== LAND) continue;
       const a = owner[i];
+      if (a !== NEUTRAL && this.anyCell[a] < 0) this.anyCell[a] = i;
       const x = i % W, y = (i / W) | 0;
 
       // 오른쪽 이웃
@@ -181,6 +184,17 @@ export class Game {
       if (this.contested[a].length < cap) this.contested[a].push(ia);
       if (this.contested[b].length < cap) this.contested[b].push(ib);
     }
+  }
+
+  /** 화면에서 "내 나라가 여기" 를 가리킬 기준 셀. 수도를 잃었으면 아무 자국 셀이나. */
+  playerAnchor() {
+    const map = this.map;
+    const p = this.countries[this.playerId];
+    if (!p) return -1;
+    if (p.capitalCell >= 0 && map.owner[p.capitalCell] === this.playerId) return p.capitalCell;
+    if (p.cities.length) return p.cities[0];
+    if (this.anyCell && this.anyCell[this.playerId] >= 0) return this.anyCell[this.playerId];
+    return -1;
   }
 
   addCoast(ownerId, cell, waterComp, cap) {
